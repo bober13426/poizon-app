@@ -397,13 +397,16 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   const minPrice = it => Math.min(...it.z.map(z=>z[2]));
   async function loadCatalog(){
     $('#homeRails').innerHTML = '<div class="skel" style="margin-top:22px"></div>';
-    for(const u of (C.cu||[])){
+    // сначала адрес на github.io (рядом с приложением), потом запасной; на каждый не больше 6 секунд
+    const urls = [...(C.cu||[])].sort((a,b)=> (a.startsWith('http')?1:0) - (b.startsWith('http')?1:0));
+    for(const u of urls){
       try{
-        const r = await fetch(u, {cache:'force-cache'});
+        const ctl = new AbortController(); const tm = setTimeout(()=>ctl.abort(), 6000);
+        const r = await fetch(u, {signal: ctl.signal});
+        clearTimeout(tm);
         if(!r.ok) continue;
         const data = await r.json();
-        ITEMS = data.items || [];
-        break;
+        if(data && Array.isArray(data.items) && data.items.length){ ITEMS = data.items; break; }
       }catch(e){}
     }
     if(isDemo && !ITEMS.length){ ITEMS = DEMO_ITEMS; }
