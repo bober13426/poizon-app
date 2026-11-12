@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Poizon Bot</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script async src="https://telegram.org/js/telegram-web-app.js" onload="window.__tgLoaded && window.__tgLoaded()"></script>
 <style>
   :root{
     --a1:#7c5cff; --a2:#00d4ff;
@@ -216,7 +216,33 @@
 
 <script>
 (function(){
-  const tg = window.Telegram && Telegram.WebApp;
+  // ---------- связь с Telegram ----------
+  // Официальный скрипт telegram.org грузится в фоне. Если он недоступен (блокировка),
+  // работаем напрямую через встроенный мост Telegram — страница не зависает.
+  const W = () => (window.Telegram && window.Telegram.WebApp) || null;
+  function postEvent(type, data){
+    data = data || {};
+    try{
+      if(window.TelegramWebviewProxy){ window.TelegramWebviewProxy.postEvent(type, JSON.stringify(data)); return true; }
+      if(window.external && 'notify' in window.external){ window.external.notify(JSON.stringify({eventType:type, eventData:data})); return true; }
+      if(window.parent !== window){ window.parent.postMessage(JSON.stringify({eventType:type, eventData:data}), '*'); return true; }
+    }catch(e){}
+    return false;
+  }
+  const inTelegram = () => !!window.TelegramWebviewProxy || window.parent !== window ||
+    (window.external && 'notify' in window.external) || /tgWebApp/.test(location.hash);
+  const TG = {
+    ready(){ const w=W(); if(w){ try{ w.ready(); w.expand(); w.setHeaderColor('#0b0d14'); w.setBackgroundColor('#0b0d14'); }catch(e){} }
+             else { postEvent('web_app_ready'); postEvent('web_app_expand'); } },
+    haptic(st){ try{ const w=W(); if(w) w.HapticFeedback.impactOccurred(st); else postEvent('web_app_trigger_haptic_feedback',{type:'impact', impact_style:st}); }catch(e){} },
+    openLink(url, iv){ const w=W(); if(w && inTelegram()) return w.openLink(url, iv ? {try_instant_view:true} : undefined);
+             if(!postEvent('web_app_open_link',{url, try_instant_view:!!iv})) window.open(url,'_blank'); },
+    openTg(url){ const w=W(); if(w && inTelegram()) return w.openTelegramLink(url);
+             if(!postEvent('web_app_open_tg_link',{path_full:url.replace(/^https?:\/\/t\.me/,'')})) window.open(url,'_blank'); },
+    sendData(str){ if(!inTelegram()) return false; const w=W(); if(w && w.sendData){ w.sendData(str); return true; }
+             return postEvent('web_app_data_send',{data:str}); },
+    back(show){ const w=W(); try{ if(w) show ? w.BackButton.show() : w.BackButton.hide(); }catch(e){} },
+  };
   const $ = s => document.querySelector(s);
 
   // ---------- данные от бота (в ссылке ?d=...) ----------
@@ -244,16 +270,16 @@
   if(C.cl && C.cl.length > 14){ $('#channel').innerHTML = ''; const a=document.createElement('a');
     a.textContent='Наш канал: '+C.cn; a.href='#'; a.style.color='inherit';
     a.onclick=e=>{e.preventDefault(); openTg(C.cl)}; $('#channel').appendChild(a); }
-  if(tg){ tg.ready(); tg.expand(); try{ tg.setHeaderColor('#0b0d14'); tg.setBackgroundColor('#0b0d14'); }catch(e){} }
+  TG.ready();
 
-  const haptic = t => { try{ tg && tg.HapticFeedback.impactOccurred(t||'light'); }catch(e){} };
+  const haptic = t => TG.haptic(t||'light');
   const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('on'),2600); };
   const rub = n => Math.round(n).toLocaleString('ru-RU') + ' ₽';
-  function openTg(url){ if(tg && url.indexOf('t.me/')>-1) tg.openTelegramLink(url); else if(tg) tg.openLink(url); else window.open(url,'_blank'); }
-  function openUrl(url){ if(tg) tg.openLink(url,{try_instant_view:true}); else window.open(url,'_blank'); }
+  function openTg(url){ url.indexOf('t.me/')>-1 ? TG.openTg(url) : TG.openLink(url); }
+  function openUrl(url){ TG.openLink(url, true); }
   function send(obj, okMsg){
     haptic('medium');
-    try{ if(tg && tg.sendData){ tg.sendData(JSON.stringify(obj)); return; } }catch(e){}
+    try{ if(TG.sendData(JSON.stringify(obj))) return; }catch(e){}
     toast(okMsg || 'Откройте приложение кнопкой в чате с ботом');
   }
 
@@ -264,11 +290,13 @@
     document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id===id));
     document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.go===id));
     current = id; window.scrollTo(0,0); haptic();
-    if(tg){ id==='home' ? tg.BackButton.hide() : tg.BackButton.show(); }
+    TG.back(id!=='home');
     if(id==='calc') setTimeout(()=>$('#price').focus(),250);
   }
   document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
-  if(tg) tg.BackButton.onClick(()=>go('home'));
+  function onTgLoaded(){ TG.ready(); try{ W().BackButton.onClick(()=>go('home')); }catch(e){} }
+  window.__tgLoaded = onTgLoaded;
+  if(W()) onTgLoaded();
 
   const manager = () => openTg('https://t.me/'+C.m);
   ['#orderBtn','#orderBtn2','#orderBtn3'].forEach(s=>$(s).addEventListener('click',()=>{haptic();manager();}));
