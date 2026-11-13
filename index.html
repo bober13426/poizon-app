@@ -631,7 +631,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
           <div class="sizes ${it.v?'var':''}">${it.z.map((zz,i)=>`<div class="sz ${i===sel?'on':''} ${zz[3]?'ord':''}" data-i="${i}"><b>${esc(label(zz))}</b><small>${zz[3]?'≈ ':''}${rub(zz[2]).replace(' ₽','')}</small></div>`).join('')}
             ${it.v?'':`<div class="sz ${custom?'on':''}" id="otherSz"><b>${custom?esc(custom):'Другой'}</b><small>${custom?'под заказ':'размер'}</small></div>`}</div>
           ${askOther ? `<div style="display:flex;gap:8px;margin-top:10px"><input class="f" id="otherIn" maxlength="12" placeholder="Ваш размер, например 44,5 или XL" value="${esc(custom)}"><button class="btn sm" id="otherOk">OK</button></div>` : ''}
-          ${z && z[3] ? `<div class="ordnote">📦 <b>Под заказ.</b> Сейчас этого ${it.v?'варианта':'размера'} нет на POIZON — наши поставщики привезут его с других площадок Китая. Цена примерная, менеджер уточнит.</div>` : ''}` : ''}
+          ${z && z[3] ? `<div class="ordnote">📦 <b>Под заказ.</b> Сейчас этого ${it.v?'варианта':'размера'} нет на POIZON — наши поставщики привезут его с других площадок Китая. Менеджер подтвердит цену этого ${it.v?'варианта':'размера'} перед оформлением.</div>` : ''}` : ''}
           <div class="pricebox">
             <div><div class="mini">${z?'Итого с доставкой':'Выберите '+sizeWord(it).toLowerCase()}</div><div class="big">${z?rub(t.total):'от '+rub(minPrice(it))}</div></div>
             <div class="mini" style="text-align:right">товар ${rub(price)}<br>${promoOk?`−${C.pp}% · доставка 🎁`:`+ доставка и комиссия`}</div>
@@ -739,9 +739,9 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     const last = idx >= 0 && pct >= 100;
     return `<div class="card2"><div class="order-h"><b>#${esc(t.n)}</b><span class="kind">${t.k==='avia'?'✈️ Авиа':'🚛 Обычная'}</span></div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
-      <div class="note">Сейчас: <b style="color:var(--text)">${esc(t.s[idx][0])}</b> · доставка ~<b style="color:var(--text)">${date(e)}</b></div>
+      <div class="note">Сейчас: <b style="color:var(--text)">${esc(t.s[idx][0])}</b> · прибытие в Москву <b style="color:var(--text)">${date(e)}</b></div>
       <ul class="tl">${t.s.map((s,i)=>`<li class="done ${i===idx?'now':''}">${esc(s[0])}<small>${date(s[1])}</small></li>`).join('')}</ul>
-      <div class="note">${last?'':'Новые статусы придут уведомлением в чат. '}Сроки ориентировочные</div></div>`;
+      <div class="note">${last?'Заказ доставлен на склад в Москве.':'Новые статусы придут уведомлением в чат.'}</div></div>`;
   }
   const ST = {new:'🆕 Новая', work:'🛠 В работе', paid:'💳 Оплачена', track:'📦 Отправлена', cancel:'❌ Отменена'};
   const dateFull = ts => new Date(ts*1000).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
