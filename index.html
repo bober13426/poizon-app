@@ -307,7 +307,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   const NOW = Date.now()/1000, D = 86400;
   const DEMO = {b:"demo",cu:[],ph:[],cp:5,hx:[],hh:[1],o:[[12,"track",11098,"1147854",NOW-3*D]],r:13.2,f:900,d:1200,pp:25,p:"",m:"manager",cn:"Poizon Bot",cl:"https://t.me/",
     a:[["🙋 Как скачать POIZON?","https://telegra.ph/"],["📦 Доставка и комиссия","https://telegra.ph/"]],
-    t:[{n:"1147854",k:"avia",i:2,mi:0,s:[["Принят в обработку",NOW-4*D],["Выкуплен",NOW-3*D],["Отправлен со склада в Китае",NOW-D/2],["Прибыл на склад в Москве",NOW+2*D]]}],
+    t:[{n:"1147854",k:"avia",i:2,mi:0,st:NOW-4*D,e:NOW+2*D,s:[["Принят в обработку",NOW-4*D],["Выкуплен",NOW-3*D],["Поступил на склад в Китае",NOW-D/2]]}],
     th:["#7c5cff","#00d4ff","Poizon Bot","Выкуп и доставка оригинальных товаров с POIZON"]};
   let C = DEMO;
   try{ const q = new URLSearchParams(location.search).get('d'); if(q) C = Object.assign({}, DEMO, {cu:[],ph:[],t:[],a:[],hx:[],hh:[],o:[],cp:5}, decode(q)); }catch(e){ console.warn(e); }
@@ -481,11 +481,16 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   function openCatalog(f){ F = f||{}; $('#q').value=''; go('catalog'); renderCatalog(); }
   function renderCatalog(){
     const groups = [...new Set(ITEMS.map(i=>i.g))];
-    const brands = [...new Set(ITEMS.map(i=>i.b).filter(Boolean))].sort();
+    // бренды — только те, что есть в выбранной категории (в «Технике» — Apple, Samsung…, а не Adidas)
+    const inGroup = ITEMS.filter(i => (!F.g || i.g===F.g) && (!F.hit || i.h) && (!F.fav || favs.includes(i.i)) &&
+      (!F.cheap || minPrice(i)<=10000));
+    const cnt = {}; inGroup.forEach(i => { if(i.b) cnt[i.b] = (cnt[i.b]||0) + 1; });
+    const brands = Object.keys(cnt).sort((a,b)=> cnt[b]-cnt[a] || a.localeCompare(b));
+    if(F.b && !cnt[F.b]) F.b = undefined;
     $('#cats').innerHTML = `<div class="chip ${!F.g&&!F.hit&&!F.cheap&&!F.fav?'on':''}" data-g="">Все</div>` +
       groups.map(g=>`<div class="chip ${F.g===g?'on':''}" data-g="${esc(g)}">${esc(g)}</div>`).join('');
     $('#brands').innerHTML = brands.length>1 ? brands.map(b=>`<div class="chip ${F.b===b?'on':''}" data-b="${esc(b)}">${esc(b)}</div>`).join('') : '';
-    $('#cats').querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{ F={g:el.dataset.g||undefined, b:F.b}; haptic(); renderCatalog(); });
+    $('#cats').querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{ F={g:el.dataset.g||undefined}; haptic(); renderCatalog(); $('#brands').scrollLeft = 0; });
     $('#brands').querySelectorAll('[data-b]').forEach(el=>el.onclick=()=>{ F.b = F.b===el.dataset.b?undefined:el.dataset.b; haptic(); renderCatalog(); });
     const q = $('#q').value.trim().toLowerCase();
     let list = ITEMS.filter(i =>
@@ -639,15 +644,17 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
 
   // ---------- заказы ----------
   function trackCard(t){
-    let idx = t.i;
-    if(!t.mi){ idx = 0; t.s.forEach((s,i)=>{ if(s[1] <= Date.now()/1000) idx = i; }); }
-    const n = t.s.length, pct = Math.round((idx+1)/n*100);
-    const date = ts => new Date(ts*1000).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+    // приходят только пройденные статусы — дальнейший маршрут клиенту не показываем
+    const idx = t.s.length - 1;
+    const st = t.st || t.s[0][1], e = t.e || t.s[idx][1];
+    const pct = Math.max(4, Math.min(100, Math.round((Date.now()/1000 - st) / Math.max(1, e - st) * 100)));
+    const date = ts => new Date(ts*1000).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',timeZone:'Europe/Moscow'});
+    const last = idx >= 0 && pct >= 100;
     return `<div class="card2"><div class="order-h"><b>#${esc(t.n)}</b><span class="kind">${t.k==='avia'?'✈️ Авиа':'🚛 Обычная'}</span></div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
-      <div class="note">Сейчас: <b style="color:var(--text)">${esc(t.s[idx][0])}</b> · в Москве ~<b style="color:var(--text)">${date(t.s[n-1][1])}</b></div>
-      <ul class="tl">${t.s.map((s,i)=>`<li class="${i<=idx?'done':''} ${i===idx?'now':''}">${esc(s[0])}<small>${i<=idx?'':'~'}${date(s[1])}</small></li>`).join('')}</ul>
-      <div class="note">Статусы и даты ориентировочные, по графику доставки</div></div>`;
+      <div class="note">Сейчас: <b style="color:var(--text)">${esc(t.s[idx][0])}</b> · доставка ~<b style="color:var(--text)">${date(e)}</b></div>
+      <ul class="tl">${t.s.map((s,i)=>`<li class="done ${i===idx?'now':''}">${esc(s[0])}<small>${date(s[1])}</small></li>`).join('')}</ul>
+      <div class="note">${last?'':'Новые статусы придут уведомлением в чат. '}Сроки ориентировочные</div></div>`;
   }
   const ST = {new:'🆕 Новая', work:'🛠 В работе', paid:'💳 Оплачена', track:'📦 Отправлена', cancel:'❌ Отменена'};
   const dateFull = ts => new Date(ts*1000).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
