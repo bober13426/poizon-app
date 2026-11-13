@@ -99,6 +99,13 @@ h2 small{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
 .sz b{display:block;font-size:15px}
 .sz small{font-size:10.5px;color:var(--muted)}
 .sz.on{border-color:var(--a1);background:color-mix(in srgb,var(--a1) 18%,transparent)}
+.sz{position:relative}
+.sz.ord{border-style:dashed}
+.sz.ord::after{content:'под заказ';position:absolute;left:50%;top:-7px;transform:translateX(-50%);font-size:8.5px;font-weight:800;
+  background:var(--a2);color:#fff;padding:1px 5px;border-radius:6px;white-space:nowrap}
+.sizes.var{grid-template-columns:repeat(2,1fr)}
+.sizes.var .sz b{font-size:13px;line-height:1.25}
+.ordnote{margin-top:10px;font-size:12.5px;color:var(--muted);background:var(--card);border-radius:12px;padding:9px 11px}
 .pricebox{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;padding:14px;border-radius:16px;background:var(--card)}
 .bar{position:fixed;left:0;right:0;bottom:0;z-index:22;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
   background:rgba(18,20,28,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);
@@ -292,12 +299,12 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     return JSON.parse(new TextDecoder().decode(bytes));
   }
   const NOW = Date.now()/1000, D = 86400;
-  const DEMO = {b:"demo",cu:[],ph:[],r:13.2,f:900,d:1200,pp:25,p:"",m:"manager",cn:"Poizon Bot",cl:"https://t.me/",
+  const DEMO = {b:"demo",cu:[],ph:[],cp:5,hx:[],hh:[1],o:[[12,"track",11098,"1147854",NOW-3*D]],r:13.2,f:900,d:1200,pp:25,p:"",m:"manager",cn:"Poizon Bot",cl:"https://t.me/",
     a:[["🙋 Как скачать POIZON?","https://telegra.ph/"],["📦 Доставка и комиссия","https://telegra.ph/"]],
     t:[{n:"1147854",k:"avia",i:2,mi:0,s:[["Принят в обработку",NOW-4*D],["Выкуплен",NOW-3*D],["Отправлен со склада в Китае",NOW-D/2],["Прибыл на склад в Москве",NOW+2*D]]}],
     th:["#7c5cff","#00d4ff","Poizon Bot","Выкуп и доставка оригинальных товаров с POIZON"]};
   let C = DEMO;
-  try{ const q = new URLSearchParams(location.search).get('d'); if(q) C = Object.assign({}, DEMO, {cu:[],ph:[],t:[],a:[]}, decode(q)); }catch(e){ console.warn(e); }
+  try{ const q = new URLSearchParams(location.search).get('d'); if(q) C = Object.assign({}, DEMO, {cu:[],ph:[],t:[],a:[],hx:[],hh:[],o:[],cp:5}, decode(q)); }catch(e){ console.warn(e); }
   const isDemo = C === DEMO;
 
   // ---------- хранилище на телефоне ----------
@@ -394,7 +401,22 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   // ---------- каталог ----------
   let ITEMS = [], byId = {};
   const img = (u,w) => u ? u + '?x-oss-process=image/resize,w_' + (w||400) + '/format,webp' : '';
-  const minPrice = it => Math.min(...it.z.map(z=>z[2]));
+  // минимальная цена — по тому, что есть в наличии на POIZON (если есть), иначе по «под заказ»
+  const minPrice = it => { const have = it.z.filter(z=>!z[3]); return Math.min(...(have.length?have:it.z).map(z=>z[2])); };
+  // техника: варианты «цвет · память» вместо размеров обуви
+  const isVariant = z => z.some(x => x[0]!=='Один размер' && !/^[0-9.,/ XSMLxsml\-]+$/.test(x[0]));
+  const sizeWord = it => it.v ? 'Вариант' : 'Размер';
+  // Каталог общий для всех ботов: в нём цены сайта. Цена этого бота = цена сайта − cp%, округление до 10 ₽.
+  function prepare(data){
+    const hidden = new Set(C.hx||[]);
+    const rank = new Map((C.hh||[]).map((id,n)=>[id,n+1]));   // порядок хитов: ручные, потом авто по рейтингу
+    const pct = Number(C.cp)||0;
+    return (data.items||[]).filter(it => !hidden.has(it.i)).map(it => {
+      const z = data.f===2 ? it.z.map(z => [z[0], z[1], Math.round(z[2]*(1-pct/100)/10)*10, z[3]?1:0]) : it.z;
+      const v = isVariant(z);
+      return Object.assign({}, it, {h: rank.get(it.i) || 0, z, v});
+    });
+  }
   async function loadCatalog(){
     $('#homeRails').innerHTML = '<div class="skel" style="margin-top:22px"></div>';
     // сначала адрес на github.io (рядом с приложением), потом запасной; на каждый не больше 6 секунд
@@ -406,10 +428,10 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
         clearTimeout(tm);
         if(!r.ok) continue;
         const data = await r.json();
-        if(data && Array.isArray(data.items) && data.items.length){ ITEMS = data.items; break; }
+        if(data && Array.isArray(data.items) && data.items.length){ ITEMS = prepare(data); break; }
       }catch(e){}
     }
-    if(isDemo && !ITEMS.length){ ITEMS = DEMO_ITEMS; }
+    if(isDemo && !ITEMS.length){ ITEMS = prepare({f:2, items:DEMO_ITEMS}); }
     byId = Object.fromEntries(ITEMS.map(i=>[i.i,i]));
     cart = cart.filter(c => c.k==='y' || byId[c.i]);  // убрать товары, которых больше нет
     saveCart(); renderHome(); renderCatalog();
@@ -432,7 +454,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   function renderHome(){
     const box = $('#homeRails');
     if(!ITEMS.length){ box.innerHTML = '<div class="empty"><div>🛍</div>Витрина скоро появится.<br>А пока — узнайте цену любого товара выше 👆</div>'; return; }
-    const hits = ITEMS.filter(i=>i.h);
+    const hits = ITEMS.filter(i=>i.h).sort((a,b)=>a.h-b.h);
     const fresh = [...ITEMS].sort((a,b)=>b.a-a.a);
     const cheap = ITEMS.filter(i=>minPrice(i) <= 10000).sort((a,b)=>minPrice(a)-minPrice(b));
     const fav = ITEMS.filter(i=>favs.includes(i.i));
@@ -460,6 +482,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     let list = ITEMS.filter(i =>
       (!F.g || i.g===F.g) && (!F.b || i.b===F.b) && (!F.hit || i.h) && (!F.fav || favs.includes(i.i)) &&
       (!F.cheap || minPrice(i)<=10000) && (!q || (i.t+' '+i.b).toLowerCase().includes(q)));
+    if(F.hit) list.sort((a,b)=>a.h-b.h);
     $('#grid').innerHTML = list.length ? list.map(cardHTML).join('') :
       `<div class="empty" style="grid-column:span 2"><div>🔍</div>${ITEMS.length?'Ничего не нашлось.':'Витрина пока пустая.'}<br>Любой товар с POIZON можно посчитать на главной.</div>`;
     bindCards($('#grid'));
@@ -485,35 +508,54 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   function openItem(id){
     const it = byId[id]; if(!it) return;
     haptic();
-    const label = z => sizeSys==='eu' ? z[1] : z[0];
-    let sel = it.z.findIndex(z => mySize && (z[0]===mySize || z[1]===mySize));
+    const label = z => (sizeSys==='eu' && !it.v) ? z[1] : z[0];
+    let sel = it.v ? -1 : it.z.findIndex(z => mySize && (z[0]===mySize || z[1]===mySize));
     if(sel<0 && it.z.length===1) sel = 0;
+    let custom = '', askOther = false;   // «другой размер» — привезём под заказ
     const fav = () => favs.includes(id);
     const draw = () => {
-      const z = sel>=0 ? it.z[sel] : null;
+      const keep = sheetOpen ? $('#sheet').scrollTop : 0;   // не прыгать наверх при выборе размера
+      const z = sel>=0 ? it.z[sel] : (custom ? [custom, custom, Math.max(...it.z.map(x=>x[2])), 1] : null);
       const price = z ? z[2] : minPrice(it);
+      const showSizes = it.z.length>1 || it.z[0][0]!=='Один размер';
       const t = totals([price]);
       openSheet(`
         <div class="gallery">${it.im.map(u=>`<img src="${esc(img(u,900))}" alt="">`).join('')}</div>
         <div class="sb">
           <div class="br">${esc(it.b)} · ${esc(it.g)}</div>
           <h3>${esc(it.t)}</h3>
-          ${it.z.length>1 || it.z[0][0]!=='Один размер' ? `
-          <div class="sizehead"><span>Размер</span><div class="seg"><button data-sys="ru" class="${sizeSys==='ru'?'on':''}">RU</button><button data-sys="eu" class="${sizeSys==='eu'?'on':''}">EU</button></div></div>
-          <div class="sizes">${it.z.map((zz,i)=>`<div class="sz ${i===sel?'on':''}" data-i="${i}"><b>${esc(label(zz))}</b><small>${rub(zz[2]).replace(' ₽','')}</small></div>`).join('')}</div>` : ''}
+          ${showSizes ? `
+          <div class="sizehead"><span>${sizeWord(it)}</span>${it.v?'':`<div class="seg"><button data-sys="ru" class="${sizeSys==='ru'?'on':''}">RU</button><button data-sys="eu" class="${sizeSys==='eu'?'on':''}">EU</button></div>`}</div>
+          <div class="sizes ${it.v?'var':''}">${it.z.map((zz,i)=>`<div class="sz ${i===sel?'on':''} ${zz[3]?'ord':''}" data-i="${i}"><b>${esc(label(zz))}</b><small>${zz[3]?'≈ ':''}${rub(zz[2]).replace(' ₽','')}</small></div>`).join('')}
+            ${it.v?'':`<div class="sz ${custom?'on':''}" id="otherSz"><b>${custom?esc(custom):'Другой'}</b><small>${custom?'под заказ':'размер'}</small></div>`}</div>
+          ${askOther ? `<div style="display:flex;gap:8px;margin-top:10px"><input class="f" id="otherIn" maxlength="12" placeholder="Ваш размер, например 44,5 или XL" value="${esc(custom)}"><button class="btn sm" id="otherOk">OK</button></div>` : ''}
+          ${z && z[3] ? `<div class="ordnote">📦 <b>Под заказ.</b> Сейчас этого ${it.v?'варианта':'размера'} нет на POIZON — наши поставщики привезут его с других площадок Китая. Цена примерная, менеджер уточнит.</div>` : ''}` : ''}
           <div class="pricebox">
-            <div><div class="mini">${z?'Итого с доставкой':'Выберите размер'}</div><div class="big">${z?rub(t.total):'от '+rub(minPrice(it))}</div></div>
+            <div><div class="mini">${z?'Итого с доставкой':'Выберите '+sizeWord(it).toLowerCase()}</div><div class="big">${z?rub(t.total):'от '+rub(minPrice(it))}</div></div>
             <div class="mini" style="text-align:right">товар ${rub(price)}<br>${promoOk?`−${C.pp}% · доставка 🎁`:`+ доставка и комиссия`}</div>
           </div>
         </div>`,
-        `<button class="btn ghost sm" id="favBtn">${fav()?'❤️':'🤍'}</button><button class="btn" id="addBtn">${z?'Добавить в заявку':'Выберите размер'}</button>`);
+        `<button class="btn ghost sm" id="favBtn">${fav()?'❤️':'🤍'}</button><button class="btn" id="addBtn">${z?'Добавить в заявку':'Выберите '+sizeWord(it).toLowerCase()}</button>`);
       const sh = $('#sheet');
-      sh.querySelectorAll('.sz').forEach(el=>el.onclick=()=>{ sel=+el.dataset.i; haptic(); draw(); });
+      sh.scrollTop = keep;
+      sh.querySelectorAll('.sz[data-i]').forEach(el=>el.onclick=()=>{ sel=+el.dataset.i; custom=''; haptic(); draw(); });
+      const other = $('#otherSz');
+      if(other) other.onclick = ()=>{ askOther = true; haptic(); draw(); setTimeout(()=>{ const i=$('#otherIn'); if(i) i.focus(); }, 50); };
+      const ok = $('#otherOk');
+      if(ok) ok.onclick = ()=>{
+        const v = ($('#otherIn').value || '').trim().slice(0,12);
+        askOther = false;
+        if(v){
+          const hit = it.z.findIndex(x => x[0]===v || x[1]===v);
+          if(hit>=0){ sel = hit; custom=''; } else { sel = -1; custom = v; }
+        }
+        haptic(); draw();
+      };
       sh.querySelectorAll('[data-sys]').forEach(b=>b.onclick=()=>{ sizeSys=b.dataset.sys; store.set('sys',sizeSys); draw(); });
       $('#favBtn').onclick = ()=>{ favs = fav() ? favs.filter(x=>x!==id) : [...favs, id]; store.set('favs',favs); haptic(); draw(); renderHome(); };
       $('#addBtn').onclick = ()=>{
-        if(sel<0){ toast('Выберите размер'); return; }
-        cart.push({i:id, s: it.z[sel][0]}); saveCart(); haptic('medium');
+        if(sel<0 && !custom){ toast('Выберите ' + sizeWord(it).toLowerCase()); return; }
+        cart.push({i:id, s: sel>=0 ? it.z[sel][0] : custom}); saveCart(); haptic('medium');
         closeSheet(); toast('Добавлено в заявку ✓');
       };
     };
@@ -528,8 +570,8 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   function cartPrice(c){
     if(c.k==='y') return Math.round(c.y*C.r);
     const it = byId[c.i]; if(!it) return 0;
-    const z = it.z.find(z=>z[0]===c.s) || it.z[0];
-    return z[2];
+    const z = it.z.find(z=>z[0]===c.s);
+    return z ? z[2] : Math.max(...it.z.map(x=>x[2]));   // свой размер под заказ — по верхней цене
   }
   function renderCart(){
     if(!cart.length){
@@ -541,7 +583,8 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
       const it = c.k==='y' ? null : byId[c.i];
       const ph = it ? `<img src="${esc(img(it.im[0],200))}" alt="">` : '💴';
       const name = it ? it.t : c.n;
-      const sub = it ? `Размер ${esc(c.s)}` : `${String(c.y).replace('.',',')} ¥ по курсу ${String(C.r).replace('.',',')}`;
+      const ord = it && (!it.z.find(z=>z[0]===c.s) || it.z.find(z=>z[0]===c.s)[3]);
+      const sub = it ? (c.s==='Один размер' ? '' : `${sizeWord(it)} ${esc(c.s)}`) + (ord ? ' · 📦 под заказ' : '') : `${String(c.y).replace('.',',')} ¥ по курсу ${String(C.r).replace('.',',')}`;
       return `<div class="card2 ci"><div class="ph">${ph}</div><div class="t"><b>${esc(name)}</b><small>${sub}</small><div style="font-weight:800;margin-top:2px">${rub(cartPrice(c))}</div></div><div class="x" data-x="${i}">✕</div></div>`;
     }).join('');
     $('#cartList').querySelectorAll('[data-x]').forEach(el=>el.onclick=()=>{ cart.splice(+el.dataset.x,1); saveCart(); haptic(); renderCart(); });
@@ -589,8 +632,14 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
       <ul class="tl">${t.s.map((s,i)=>`<li class="${i<=idx?'done':''} ${i===idx?'now':''}">${esc(s[0])}<small>${i<=idx?'':'~'}${date(s[1])}</small></li>`).join('')}</ul>
       <div class="note">Статусы и даты ориентировочные, по графику доставки</div></div>`;
   }
-  $('#orderList').innerHTML = (C.t||[]).length ? C.t.map(trackCard).join('') :
-    '<div class="empty"><div>📭</div>Здесь появятся ваши заказы.<br>Введите трек-номер от менеджера выше.</div>';
+  const ST = {new:'🆕 Новая', work:'🛠 В работе', paid:'💳 Оплачена', track:'📦 Отправлена', cancel:'❌ Отменена'};
+  const dateFull = ts => new Date(ts*1000).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'});
+  const ordersHTML = (C.o||[]).length ? '<h2 style="margin-top:4px">Мои заявки</h2>' + C.o.map(o =>
+    `<div class="card2"><div class="order-h"><b>Заявка №${o[0]}</b><span class="kind">${ST[o[1]]||esc(o[1])}</span></div>
+     <div class="note" style="margin-top:6px">от ${dateFull(o[4])} · ${rub(o[2])}${o[3]?` · трек <b style="color:var(--text)">${esc(o[3])}</b>`:''}</div></div>`).join('') : '';
+  const tracksHTML = (C.t||[]).length ? '<h2>Отслеживание</h2>' + C.t.map(trackCard).join('') : '';
+  $('#orderList').innerHTML = (ordersHTML + tracksHTML) ||
+    '<div class="empty"><div>📭</div>Здесь появятся ваши заявки и заказы.<br>Трек-номер от менеджера можно ввести выше.</div>';
   $('#trackBtn').onclick = ()=>{
     const n = $('#track').value.trim().replace(/^#/,'');
     if(n.length < 4){ toast('Введите трек-номер'); return; }
@@ -617,8 +666,9 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
 
   // ---------- демо-витрина для просмотра в браузере ----------
   const DEMO_ITEMS = [
-    {i:1,t:"New Balance 530 White Silver",b:"New Balance",g:"👟 Кроссовки",h:1,a:NOW,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20240726/1eed0defcabe44b989217ec6ef6a8431.jpg"],z:[["39","40",6890],["41","42",6890],["42","43",6840],["43","44",7240]]},
-    {i:2,t:"Kawasaki Aurora Backpack",b:"Kawasaki",g:"🎒 Сумки",h:0,a:NOW-9,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20250619/333932e74cfd440e9536041cb8737d8f.jpg"],z:[["Один размер","Один размер",4680]]},
+    {i:1,t:"New Balance 530 White Silver",b:"New Balance",g:"👟 Кроссовки",h:1,a:NOW,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20240726/1eed0defcabe44b989217ec6ef6a8431.jpg"],z:[["38","39",7250,1],["39","40",7250],["41","42",7250],["42","43",7200],["43","44",7616]]},
+    {i:2,t:"Kawasaki Aurora Backpack",b:"Kawasaki",g:"🎒 Сумки",h:0,a:NOW-9,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20250619/333932e74cfd440e9536041cb8737d8f.jpg"],z:[["Один размер","Один размер",4922]]},
+    {i:3,t:"Apple iPhone 17 Pro",b:"Apple",g:"📱 Техника",h:0,a:NOW-5,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20240726/1eed0defcabe44b989217ec6ef6a8431.jpg"],z:[["Темно-синий · 256 ГБ","Темно-синий · 256 ГБ",126663],["Темно-синий · 512 ГБ","Темно-синий · 512 ГБ",164756],["Серебристый · 1 ТБ","Серебристый · 1 ТБ",203693,1]]},
   ];
 
   syncPromoUI(); renderSizePill(); saveCart(); calcHero();
