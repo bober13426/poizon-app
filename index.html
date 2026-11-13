@@ -110,6 +110,26 @@ nav button span img.ae{width:26px;height:26px;vertical-align:middle}
 .notfound .nf-t b{display:block;font-size:15px;margin-bottom:2px}
 .notfound .nf-t span{font-size:12.5px;color:var(--muted)}
 
+/* отзывы клиентов */
+.rvrail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;margin:0 -14px;padding:2px 14px 6px;scrollbar-width:none}
+.rvrail::-webkit-scrollbar{display:none}
+.rv{flex:0 0 210px;scroll-snap-align:start;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .12s}
+.rv:active{transform:scale(.97)}
+.rv .rp{height:150px;background:var(--card2);position:relative}
+.rv .rp img{width:100%;height:100%;object-fit:cover;display:block}
+.rv .rc{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px}
+.rv .rt{padding:10px 12px 12px;font-size:13px;line-height:1.35;max-height:5.8em;overflow:hidden;white-space:pre-wrap}
+.rv.nop .rt{max-height:9.6em;padding:14px}
+/* подбор размера */
+.szhelp{margin-top:10px;font-size:13px;font-weight:700;color:var(--a1);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.szhelp img.ae{width:18px;height:18px}
+.szres{margin-top:14px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+html[data-theme=light] .sheet .szres{background:var(--bg)}
+.szres .rec{font-size:26px;font-weight:850;letter-spacing:-.6px}
+.szres .rec small{font-size:13px;font-weight:650;color:var(--muted);letter-spacing:0}
+.szlbl{font-size:13px;font-weight:650;color:var(--muted);margin:12px 0 6px}
+.szask{margin-top:12px;font-size:13px;font-weight:650;color:var(--a1);cursor:pointer}
+
 /* живые анимации */
 @keyframes rise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes pop{0%{transform:translateY(-2px) scale(1)}40%{transform:translateY(-5px) scale(1.25)}70%{transform:translateY(-1px) scale(.95)}100%{transform:translateY(-2px) scale(1)}}
@@ -271,6 +291,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   </div>
 
   <div id="homeRails"></div>
+  <div id="homeReviews"></div>
   <div id="homeNF"></div>
 </section>
 
@@ -306,6 +327,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   <div class="item poizon" id="poizonBtn"><div class="ic" data-ae>🛍</div><div class="t">Открыть POIZON<br><small style="font-weight:500;color:#666">Найдите товар и узнайте цену в ¥</small></div><div class="go">›</div></div>
   <div class="item" id="mgrBtn"><div class="ic" data-ae>😎</div><div class="t">Написать менеджеру</div><div class="go">›</div></div>
   <div class="item" id="chanBtn"><div class="ic" data-ae>📢</div><div class="t" id="chanTxt">Наш канал</div><div class="go">›</div></div>
+  <div class="item" id="invBtn" style="display:none"><div class="ic" data-ae>🎁</div><div class="t">Пригласить друга<br><small style="font-weight:500;color:var(--muted)">Отправьте ему ссылку на бота</small></div><div class="go">›</div></div>
   <div class="item" id="themeRow" style="cursor:default;flex-wrap:wrap"><div class="ic" data-ae>🌗</div><div class="t">Оформление</div>
     <div class="seg" id="themeSeg" style="flex:1 1 100%"><button data-th="auto" style="flex:1">Как в TG</button><button data-th="light" style="flex:1">☀️ Светлая</button><button data-th="dark" style="flex:1">🌙 Тёмная</button></div></div>
   <h2>Ответы на вопросы</h2>
@@ -660,11 +682,12 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   }
   $('#sheetBg').addEventListener('click', closeSheet);
 
-  function openItem(id){
+  function openItem(id, pre){
     const it = byId[id]; if(!it) return;
     haptic();
     const label = z => (sizeSys==='eu' && !it.v) ? z[1] : z[0];
-    let sel = it.v ? -1 : it.z.findIndex(z => mySize && (z[0]===mySize || z[1]===mySize));
+    // pre — номер размера, который подобрал помощник (по номеру, а не по названию: RU 41 и EU 41 — разные размеры)
+    let sel = it.v ? -1 : (pre != null ? pre : it.z.findIndex(z => mySize && (z[0]===mySize || z[1]===mySize)));
     if(sel<0 && it.z.length===1) sel = 0;
     let custom = '', askOther = false, galPos = 0;   // «другой размер» — привезём под заказ
     const fav = () => favs.includes(id);
@@ -684,6 +707,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
           <div class="sizehead"><span>${sizeWord(it)}</span>${it.v?'':`<div class="seg"><button data-sys="ru" class="${sizeSys==='ru'?'on':''}">RU</button><button data-sys="eu" class="${sizeSys==='eu'?'on':''}">EU</button></div>`}</div>
           <div class="sizes ${it.v?'var':''}">${it.z.map((zz,i)=>`<div class="sz ${i===sel?'on':''} ${zz[3]?'ord':''}" data-i="${i}"><b>${esc(label(zz))}</b><small>${zz[3]?'≈ ':''}${rub(zz[2]).replace(' ₽','')}</small></div>`).join('')}
             ${it.v?'':`<div class="sz ${custom?'on':''}" id="otherSz"><b>${custom?esc(custom):'Другой'}</b><small>${custom?'под заказ':'размер'}</small></div>`}</div>
+          ${sizeKind(it) ? `<div class="szhelp" id="szHelp">${ae('📏')} Не знаете размер? Подберём</div>` : ''}
           ${askOther ? `<div style="display:flex;gap:8px;margin-top:10px"><input class="f" id="otherIn" maxlength="12" placeholder="Ваш размер, например 44,5 или XL" value="${esc(custom)}"><button class="btn sm" id="otherOk">OK</button></div>` : ''}
           ${z && z[3] ? `<div class="ordnote">📦 <b>Под заказ.</b> Сейчас этого ${it.v?'варианта':'размера'} нет на POIZON — наши поставщики привезут его с других площадок Китая. Менеджер подтвердит цену этого ${it.v?'варианта':'размера'} перед оформлением.</div>` : ''}` : ''}
           <div class="pricebox">
@@ -702,6 +726,8 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
         if(gc) gc.textContent = (galPos+1) + '/' + it.im.length;
       }
       sh.querySelectorAll('.sz[data-i]').forEach(el=>el.onclick=()=>{ sel=+el.dataset.i; custom=''; haptic(); draw(); });
+      const sh2 = $('#szHelp');
+      if(sh2) sh2.onclick = ()=>{ haptic(); openSizeHelper(it); };
       const other = $('#otherSz');
       if(other) other.onclick = ()=>{ askOther = true; haptic(); draw(); setTimeout(()=>{ const i=$('#otherIn'); if(i) i.focus(); }, 50); };
       const ok = $('#otherOk');
@@ -723,6 +749,130 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
       };
     };
     draw();
+  }
+
+  // ---------- подбор размера ----------
+  const num = x => parseFloat(String(x).replace(',','.'));
+  const fmtN = x => String(x).replace('.',',');
+  const LET = ['XS','S','M','L','XL','2XL','3XL','4XL'];
+  const RU_LET = {40:0,42:0,44:1,46:2,48:3,50:4,52:5,54:6,56:7};      // русские размеры одежды → буквы
+  function letIdx(label){
+    const t = String(label||'').toUpperCase().replace(/\s/g,'');
+    if(/^\d{2}$/.test(t)) return t in RU_LET ? RU_LET[t] : -1;
+    const m = t.match(/^(4XL|3XL|2XL|XXXL|XXL|XL|XS|S|M|L)/);
+    if(!m) return -1;
+    return LET.indexOf({XXL:'2XL', XXXL:'3XL'}[m[1]] || m[1]);
+  }
+  function sizeKind(it){
+    if(it.v || !it.z.length || it.z[0][0]==='Один размер') return '';
+    if(/Кроссовки|Ботинки|Обувь|Тапки/.test(it.g)) return 'shoe';
+    if(/Одежда|Футболки|Штаны/.test(it.g)) return 'cloth';
+    if(it.z.every(z=>num(z[1])>=30 && num(z[1])<=52)) return 'shoe';
+    if(it.z.some(z=>letIdx(z[0])>=0 || letIdx(z[1])>=0)) return 'cloth';
+    return '';
+  }
+  // длина стопы (см) → размер EU (по сеткам Nike/Adidas, шаг 0,5)
+  const shoeEU = L => Math.round((40 + (L-25)*1.35)*2)/2;
+  // рост и вес → размер по китайской сетке POIZON (размеры там обычно на один меньше европейских)
+  function clothIdx(h, w, loose){
+    const ih = Math.max(0, Math.min(7, Math.floor((h-155)/5)));
+    const iw = Math.max(0, Math.min(7, Math.floor((w-42)/8)));
+    return Math.min(7, Math.max(iw, Math.ceil((ih+iw)/2)) + (loose?1:0));
+  }
+  function openSizeHelper(it){
+    const kind = sizeKind(it), shoe = kind==='shoe';
+    let foot = store.get('sz_foot',''), hh = store.get('sz_h',''), ww = store.get('sz_w',''), loose = 0, pick = null;
+    openSheet(`<div class="sb"><div class="br">${esc(it.b)}</div><h3>📏 Подбор размера</h3>
+      ${shoe ? `<div class="szlbl">Длина стопы, см</div>
+        <input class="f" id="szFoot" inputmode="decimal" maxlength="5" placeholder="например, 26,5" value="${esc(foot)}">
+        <div class="note" style="margin-top:6px">Поставьте ногу на лист бумаги, отметьте пятку и большой палец, измерьте расстояние линейкой.</div>` :
+      `<div class="szlbl">Рост, см</div><input class="f" id="szH" inputmode="numeric" maxlength="3" placeholder="например, 178" value="${esc(hh)}">
+        <div class="szlbl">Вес, кг</div><input class="f" id="szW" inputmode="numeric" maxlength="3" placeholder="например, 72" value="${esc(ww)}">
+        <div class="szlbl">Посадка</div><div class="seg" id="szFit"><button data-f="0" class="on" style="flex:1">Обычная</button><button data-f="1" style="flex:1">Свободная</button></div>`}
+      <div id="szOut"></div>
+      <div class="szask" id="szAsk">💬 Не уверены? Спросить менеджера</div></div>`,
+      `<button class="btn ghost sm" id="szBack" style="white-space:nowrap;flex:0 0 auto">‹ Назад</button><button class="btn" id="szPick" disabled>Введите данные</button>`);
+    const out = $('#szOut'), btn = $('#szPick');
+    const noPick = txt => { pick = null; btn.disabled = true; btn.textContent = txt || 'Введите данные'; };
+    const note = txt => `<div class="ordnote">${txt}</div>`;
+    function calc(){
+      if(shoe){
+        const L = num($('#szFoot').value);
+        if(!(L>=15 && L<=35)){ out.innerHTML=''; return noPick(); }
+        store.set('sz_foot', $('#szFoot').value);
+        const eu = shoeEU(L), ru = eu - 1;
+        let bi = -1, bd = 1e9;
+        it.z.forEach((z,i)=>{ const e = num(z[1]); if(isNaN(e)) return; const d = Math.abs(e-eu);
+          if(d < bd - 1e-9 || (Math.abs(d-bd) < 1e-9 && e > num(it.z[bi][1]))){ bd = d; bi = i; } });
+        let html = `<div class="szres"><div class="mini">Ваш размер</div><div class="rec">EU ${fmtN(eu)} <small>· RU ${fmtN(ru)}</small></div>`;
+        if(bi>=0 && bd<=1){
+          const z = it.z[bi]; pick = bi;
+          html += `<div style="margin-top:8px">В этой модели ближайший: <b>${esc(sizeSys==='eu'?z[1]:z[0])}</b>${z[3]?' · под заказ':''}</div>`;
+          btn.disabled = false; btn.textContent = 'Выбрать ' + (sizeSys==='eu'?z[1]:z[0]);
+        } else { html += `<div style="margin-top:8px">В этой модели такого размера нет. Можно выбрать «Другой» в карточке — привезём под заказ.</div>`; noPick('Размера нет в модели'); }
+        out.innerHTML = html + '</div>' + note('Подсказка: у брендов посадка разная. Если стопа широкая или вы между размерами — берите больший. Сомневаетесь — спросите менеджера.');
+      } else {
+        const h = num($('#szH').value), w = num($('#szW').value);
+        if(!(h>=120 && h<=220 && w>=30 && w<=200)){ out.innerHTML=''; return noPick(); }
+        store.set('sz_h', $('#szH').value); store.set('sz_w', $('#szW').value);
+        const idx = clothIdx(h, w, loose);
+        let bi = -1, bd = 1e9;
+        it.z.forEach((z,i)=>{ const li = letIdx(z[0])>=0 ? letIdx(z[0]) : letIdx(z[1]); if(li<0) return; const d = Math.abs(li-idx);
+          if(d < bd || (d===bd && li > letIdx(it.z[bi][0]))){ bd = d; bi = i; } });
+        let html = `<div class="szres"><div class="mini">Ваш размер</div><div class="rec">${LET[idx]}</div>`;
+        if(bi>=0 && bd<=1){
+          const z = it.z[bi]; pick = bi;
+          html += `<div style="margin-top:8px">В этой модели ближайший: <b>${esc(z[0])}</b>${z[3]?' · под заказ':''}</div>`;
+          btn.disabled = false; btn.textContent = 'Выбрать ' + z[0];
+        } else if(bi<0){ html += `<div style="margin-top:8px">Размеры этой модели в другой сетке — сверьтесь с таблицей размеров в описании на POIZON или спросите менеджера.</div>`; noPick('Выберите в карточке'); }
+        else { html += `<div style="margin-top:8px">Такого размера в модели нет. Можно выбрать «Другой» в карточке — привезём под заказ.</div>`; noPick('Размера нет в модели'); }
+        out.innerHTML = html + '</div>' + note('Размеры на POIZON — китайская сетка, они часто на размер меньше европейских. Если любите свободнее — выберите «Свободная». Сомневаетесь — спросите менеджера.');
+      }
+    }
+    const sh = $('#sheet');
+    sh.querySelectorAll('input.f').forEach(i=>i.addEventListener('input', ()=>{ i.value = i.value.replace(/[^\d.,]/g,''); calc(); }));
+    sh.querySelectorAll('#szFit button').forEach(b=>b.onclick=()=>{ loose = +b.dataset.f; sh.querySelectorAll('#szFit button').forEach(x=>x.classList.toggle('on',x===b)); haptic(); calc(); });
+    $('#szBack').onclick = ()=>{ haptic(); openItem(it.i); };
+    btn.onclick = ()=>{ if(pick != null) openItem(it.i, pick); };
+    $('#szAsk').onclick = ()=>{
+      haptic();
+      const m = String(C.m||'').replace(/^@/,'');
+      if(!m || m==='manager_username'){ toast('Менеджер ещё не указан'); return; }
+      const data = shoe ? ('стопа ' + ($('#szFoot').value||'?') + ' см') : ('рост ' + ($('#szH').value||'?') + ', вес ' + ($('#szW').value||'?'));
+      openTg('https://t.me/' + m + '?text=' + encodeURIComponent('Здравствуйте! Подскажите размер: ' + it.t + ' (' + data + ')'));
+    };
+    calc();
+  }
+
+  // ---------- отзывы клиентов (их добавляет менеджер) ----------
+  let REVIEWS = [];
+  const rvImg = p => new URL(p, location.href.split('?')[0].split('#')[0]).href;
+  function renderReviews(){
+    const box = $('#homeReviews'); if(!box) return;
+    if(!REVIEWS.length){ box.innerHTML = ''; return; }
+    box.innerHTML = `<h2><span>${ae('⭐')} Отзывы клиентов</span></h2><div class="rvrail">` + REVIEWS.map((r,i)=>
+      `<div class="rv ${r.im.length?'':'nop'}" data-i="${i}">` +
+      (r.im.length ? `<div class="rp"><img loading="lazy" src="${esc(rvImg(r.im[0]))}" alt="">${r.im.length>1?`<span class="rc">1/${r.im.length}</span>`:''}</div>` : '') +
+      `<div class="rt">${esc(r.t||'')}</div></div>`).join('') + '</div>';
+    box.querySelectorAll('.rv').forEach(el=>el.onclick=()=>openReview(+el.dataset.i));
+  }
+  function openReview(i){
+    const r = REVIEWS[i]; if(!r) return; haptic();
+    openSheet((r.im.length ? `<div class="gwrap"><div class="gallery" id="rvGal">${r.im.map(u=>`<img src="${esc(rvImg(u))}" alt="">`).join('')}</div>` +
+        (r.im.length>1 ? `<div class="gcount" id="rvCnt">1/${r.im.length}</div>` : '') + '</div>' : '') +
+      `<div class="sb"><div style="white-space:pre-wrap;line-height:1.45;font-size:15px">${esc(r.t||'')}</div></div>`, null);
+    const g = $('#rvGal'), n = $('#rvCnt');
+    if(g && n) g.onscroll = ()=>{ n.textContent = (Math.round(g.scrollLeft/Math.max(1,g.clientWidth))+1) + '/' + r.im.length; };
+  }
+  async function loadReviews(){
+    if(!C.rv) return;
+    try{
+      const r = await fetch('reviews/' + encodeURIComponent(C.b) + '.json?v=' + C.rv);
+      if(!r.ok) return;
+      const d = await r.json();
+      REVIEWS = (d.items||[]).map(x=>({t:x.t||'', im:Array.isArray(x.im)?x.im:[]})).filter(x=>x.t || x.im.length);
+      renderReviews();
+    }catch(e){ console.warn('reviews', e); }
   }
 
   // ---------- корзина ----------
@@ -815,6 +965,10 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   $('#poizonBtn').onclick = ()=>{ haptic(); TG.openLink('https://www.thepoizon.ru/'); };
   $('#mgrBtn').onclick = ()=>{ haptic(); openTg('https://t.me/'+C.m); };
   $('#chanBtn').onclick = ()=>{ haptic(); if(C.cl && C.cl.length>14) openTg(C.cl); else toast('Канал не указан'); };
+  if(C.rl){
+    $('#invBtn').style.display = '';
+    $('#invBtn').onclick = ()=>{ haptic(); openTg('https://t.me/share/url?url=' + encodeURIComponent(C.rl) + '&text=' + encodeURIComponent('Заказываю оригинальные вещи с POIZON через этого бота')); };
+  }
   $('#arts').innerHTML = (C.a||[]).length ? '' : '<div class="note">Статьи скоро появятся</div>';
   (C.a||[]).forEach(a=>{
     const el = document.createElement('div'); el.className='item';
@@ -840,6 +994,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   if(C.p){ promoOk = true; promoCode = C.p; syncPromoUI(); }
   else if(promoCode){ checkPromo(promoCode).then(ok=>{ promoOk=ok; if(!ok){ promoCode=''; store.set('promo',''); } syncPromoUI(); calcHero(); }); }
   loadCatalog();
+  loadReviews();
 })();
 </script>
 </body>
