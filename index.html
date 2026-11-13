@@ -412,7 +412,10 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     const rank = new Map((C.hh||[]).map((id,n)=>[id,n+1]));   // порядок хитов: ручные, потом авто по рейтингу
     const pct = Number(C.cp)||0;
     return (data.items||[]).filter(it => !hidden.has(it.i)).map(it => {
-      const z = data.f===2 ? it.z.map(z => [z[0], z[1], Math.round(z[2]*(1-pct/100)/10)*10, z[3]?1:0]) : it.z;
+      // цена: юани POIZON Китай × курс бота (если есть и включено), иначе цена thepoizon.ru − cp%
+      const yuan = C.pm === 'cny';
+      const z = data.f===2 ? it.z.map(z => [z[0], z[1],
+        (yuan && z[4]) ? Math.round(z[4]*Number(C.r)/10)*10 : Math.round(z[2]*(1-pct/100)/10)*10, z[3]?1:0]) : it.z;
       const v = isVariant(z);
       return Object.assign({}, it, {h: rank.get(it.i) || 0, z, v});
     });
