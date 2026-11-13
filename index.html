@@ -60,7 +60,8 @@ h2 small{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .12s}
 .card:active{transform:scale(.97)}
 .card .ph{aspect-ratio:1;background:#fff;display:grid;place-items:center;position:relative}
-.card .ph img{width:88%;height:88%;object-fit:contain}
+.card .ph img:not(.ae){width:88%;height:88%;object-fit:contain}
+.card .tag img.ae{width:14px;height:14px;vertical-align:-2px}
 .card .tag{position:absolute;left:8px;top:8px;background:#111;color:#fff;font-size:11px;font-weight:700;padding:3px 7px;border-radius:8px}
 .card .fav{position:absolute;right:6px;top:6px;font-size:18px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
 .card .info{padding:9px 10px 11px}
@@ -74,6 +75,43 @@ h2 small{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
 .search{width:100%;background:var(--card2);border:1.5px solid transparent;color:var(--text);border-radius:14px;padding:13px 14px;font:inherit;outline:none;margin-bottom:12px}
 .search:focus{border-color:var(--a1)}
 .empty{text-align:center;color:var(--muted);padding:34px 10px}
+/* анимированные эмодзи (Noto Animated Emoji, CC BY 4.0) */
+img.ae{width:1.2em;height:1.2em;vertical-align:-.25em;display:inline-block;object-fit:contain}
+.empty div img.ae{width:64px;height:64px}
+.item .ic img.ae{width:26px;height:26px}
+nav button span img.ae{width:26px;height:26px;vertical-align:middle}
+/* «Не нашли товар?» */
+.notfound{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:15px;margin:14px 0 4px;border-radius:20px;
+  background:var(--bg2);border:1px solid var(--line);position:relative;overflow:hidden}
+.notfound:before{content:"";position:absolute;inset:0;background:var(--grad);opacity:.12}
+.notfound>*{position:relative}
+.notfound .nf-ic{font-size:34px;line-height:1;flex:0 0 auto}
+.notfound .nf-ic img.ae{width:46px;height:46px}
+.notfound .nf-t{flex:1;min-width:0}
+.notfound .btn.nf-go{width:100%;flex:1 1 100%}
+.notfound .nf-t b{display:block;font-size:15px;margin-bottom:2px}
+.notfound .nf-t span{font-size:12.5px;color:var(--muted)}
+
+/* живые анимации */
+@keyframes rise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:translateY(-2px) scale(1)}40%{transform:translateY(-5px) scale(1.25)}70%{transform:translateY(-1px) scale(.95)}100%{transform:translateY(-2px) scale(1)}}
+@keyframes shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@keyframes wob{0%,100%{transform:rotate(0)}20%{transform:rotate(-10deg)}40%{transform:rotate(9deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(3deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--a1) 45%,transparent)}50%{box-shadow:0 0 0 8px transparent}}
+.card{animation:rise .38s cubic-bezier(.2,.8,.2,1) both}
+.grid .card:nth-child(2){animation-delay:.04s}.grid .card:nth-child(3){animation-delay:.08s}.grid .card:nth-child(4){animation-delay:.12s}
+.grid .card:nth-child(5){animation-delay:.16s}.grid .card:nth-child(6){animation-delay:.2s}
+.rail .card:nth-child(2){animation-delay:.05s}.rail .card:nth-child(3){animation-delay:.1s}
+nav button.on span{animation:pop .45s ease}
+.btn{position:relative;overflow:hidden}
+.btn.shine:after{content:"";position:absolute;top:0;bottom:0;width:40%;left:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 3.2s ease-in-out infinite}
+.notfound .btn{animation:pulse 2.4s ease-in-out infinite}
+.toggle.on .sw{animation:pop .35s ease}
+.big.bump{animation:pop .35s ease}
+.chip{transition:transform .15s,background .2s}.chip:active{transform:scale(.94)}
+.item{transition:transform .12s}.item:active{transform:scale(.98)}
+.item .ic{transition:transform .2s}.item:active .ic{animation:wob .5s ease}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .empty div{font-size:46px;margin-bottom:8px}
 
 /* шторка товара */
@@ -131,7 +169,7 @@ textarea.f{min-height:110px;resize:vertical}
 /* корзина */
 .ci{display:flex;gap:12px;align-items:center}
 .ci .ph{width:62px;height:62px;border-radius:12px;background:#fff;flex:0 0 auto;display:grid;place-items:center;font-size:26px;overflow:hidden}
-.ci .ph img{width:90%;height:90%;object-fit:contain}
+.ci .ph img:not(.ae){width:90%;height:90%;object-fit:contain}
 .ci .t{flex:1;min-width:0}
 .ci .t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ci .t small{color:var(--muted);font-size:12.5px}
@@ -190,24 +228,25 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
 <section class="page on" id="home">
   <div class="top">
     <h1 id="title">Poizon Bot</h1>
-    <div class="pill" id="sizePill">👟 <b id="mySizeTxt">Мой размер</b></div>
+    <div class="pill" id="sizePill"><i data-ae>👟</i> <b id="mySizeTxt">Мой размер</b></div>
   </div>
 
   <div class="hero">
-    <div class="lbl"><span>💴 Узнать цену любого товара с POIZON</span><span>1¥ = <span id="rateTxt">—</span> ₽</span></div>
-    <div class="amount"><span>¥</span><input id="yuan" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+    <div class="lbl"><span><i data-ae>💴</i> Узнать цену любого товара с POIZON</span><span>1¥ = <span id="rateTxt">—</span> ₽</span></div>
+    <div class="amount"><span>¥</span><input id="yuan" inputmode="decimal" placeholder="0" autocomplete="off" maxlength="6"></div>
     <div class="result">
       <div><div class="mini">Итого с доставкой</div><div class="big" id="yuanTotal">0 ₽</div></div>
-      <div class="toggle" id="heroPromo"><span>🎟 Промокод</span><div class="sw"></div></div>
+      <div class="toggle" id="heroPromo"><span><i data-ae>🎟</i> Промокод</span><div class="sw"></div></div>
     </div>
     <div class="mini" id="yuanBreak" style="margin-top:6px"></div>
     <div class="row2">
       <input class="f" id="yuanName" placeholder="Что это? (необязательно)" style="flex:1">
-      <button class="btn sm" id="yuanAdd">+ В заявку</button>
+      <button class="btn sm shine" id="yuanAdd">+ В заявку</button>
     </div>
   </div>
 
   <div id="homeRails"></div>
+  <div id="homeNF"></div>
 </section>
 
 <!-- КАТАЛОГ -->
@@ -239,23 +278,24 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
 <!-- ЕЩЁ -->
 <section class="page" id="more">
   <div class="top"><h1>Помощь</h1></div>
-  <div class="item poizon" id="poizonBtn"><div class="ic">🛍</div><div class="t">Открыть POIZON<br><small style="font-weight:500;color:#666">Найдите товар и узнайте цену в ¥</small></div><div class="go">›</div></div>
-  <div class="item" id="mgrBtn"><div class="ic">😎</div><div class="t">Написать менеджеру</div><div class="go">›</div></div>
-  <div class="item" id="chanBtn"><div class="ic">📢</div><div class="t" id="chanTxt">Наш канал</div><div class="go">›</div></div>
+  <div class="item poizon" id="poizonBtn"><div class="ic" data-ae>🛍</div><div class="t">Открыть POIZON<br><small style="font-weight:500;color:#666">Найдите товар и узнайте цену в ¥</small></div><div class="go">›</div></div>
+  <div class="item" id="mgrBtn"><div class="ic" data-ae>😎</div><div class="t">Написать менеджеру</div><div class="go">›</div></div>
+  <div class="item" id="chanBtn"><div class="ic" data-ae>📢</div><div class="t" id="chanTxt">Наш канал</div><div class="go">›</div></div>
   <h2>Ответы на вопросы</h2>
   <div id="arts"></div>
   <h2>Задать вопрос</h2>
   <textarea class="f" id="question" placeholder="Напишите вопрос — ответ придёт в чат с ботом"></textarea>
   <button class="btn" id="askBtn" style="margin-top:10px">📨 Отправить вопрос</button>
+  <div class="mini" style="text-align:center;margin:18px 0 4px;opacity:.6">Анимированные эмодзи — Noto Emoji от Google, лицензия CC BY 4.0</div>
 </section>
 </main>
 
 <nav>
-  <button data-go="home" class="on"><span>🏠</span>Главная</button>
-  <button data-go="catalog"><span>🛍</span>Витрина</button>
-  <button data-go="cart"><span>🧾</span>Заявка<i class="cnt" id="cartCnt"></i></button>
-  <button data-go="orders"><span>📦</span>Заказы</button>
-  <button data-go="more"><span>💬</span>Помощь</button>
+  <button data-go="home" class="on"><span data-ae>🏠</span>Главная</button>
+  <button data-go="catalog"><span data-ae>🛍</span>Витрина</button>
+  <button data-go="cart"><span data-ae>🧾</span>Заявка<i class="cnt" id="cartCnt"></i></button>
+  <button data-go="orders"><span data-ae>📦</span>Заказы</button>
+  <button data-go="more"><span data-ae>💬</span>Помощь</button>
 </nav>
 
 <div class="sheet-bg" id="sheetBg"></div>
@@ -296,6 +336,32 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('on'),2600); };
   const rub = n => Math.round(n).toLocaleString('ru-RU') + ' ₽';
   const openTg = url => url.indexOf('t.me/')>-1 ? TG.openTg(url) : TG.openLink(url);
+
+  // ---------- анимированные эмодзи: Noto Animated Emoji (Google, CC BY 4.0) ----------
+  // Если анимации для смайлика нет или Google недоступен — остаётся обычный смайлик.
+  const AE_URL = cp => 'https://fonts.gstatic.com/s/e/notoemoji/latest/' + cp + '/512.webp';
+  const AE_DAY = 864e5;
+  const AE_BADT = (()=>{ try{ const o = JSON.parse(localStorage.getItem('ae_bad2')||'{}'); const now = Date.now();
+    return Object.fromEntries(Object.entries(o).filter(([,t])=>now-t < AE_DAY)); }catch(e){ return {}; } })();
+  const AE_BAD = new Set(Object.keys(AE_BADT));
+  const aeCodes = e => { const cps = Array.from(e).map(ch=>ch.codePointAt(0).toString(16)).filter(c=>c!=='fe0f');
+    const base = cps.join('_'); return cps.length===1 ? [base, base+'_fe0f'] : [base]; };
+  function ae(e){
+    e = String(e||'').trim();
+    if(!e || AE_BAD.has(e)) return esc(e);
+    return `<img class="ae" alt="${esc(e)}" data-n="0" src="${AE_URL(aeCodes(e)[0])}" onload="this.dataset.ok=1" onerror="aeFail(this)" decoding="async">`;
+  }
+  window.aeFail = function(im){
+    const e = im.alt, codes = aeCodes(e), n = +im.dataset.n + 1;
+    if(!im.dataset.ok && n < codes.length){ im.dataset.n = n; im.src = AE_URL(codes[n]); return; }
+    AE_BAD.add(e); AE_BADT[e] = Date.now(); try{ localStorage.setItem('ae_bad2', JSON.stringify(AE_BADT)); }catch(_){}
+    document.querySelectorAll('img.ae').forEach(x=>{ if(x.alt===e) x.replaceWith(document.createTextNode(e)); });
+  };
+  function aeHydrate(root){
+    (root||document).querySelectorAll('[data-ae]').forEach(el=>{ const e = el.textContent.trim(); el.removeAttribute('data-ae'); el.innerHTML = ae(e); });
+    // если картинки так и не загрузились (медленная сеть) — обычные смайлики
+    clearTimeout(aeHydrate.t); aeHydrate.t = setTimeout(()=>document.querySelectorAll('img.ae').forEach(x=>{ if(!x.dataset.ok && !x.complete) x.replaceWith(document.createTextNode(x.alt)); }), 8000);
+  }
 
   // ---------- данные от бота (?d=...) ----------
   function decode(s){
@@ -380,10 +446,15 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     const y = parseFloat(($('#yuan').value||'').replace(/\s/g,'').replace(',','.')) || 0;
     const item = Math.round(y*C.r);
     const t = totals(y ? [item] : []);
-    $('#yuanTotal').textContent = rub(t.total);
+    const tot = $('#yuanTotal'), txt = rub(t.total);
+    if(tot.textContent !== txt){ tot.textContent = txt; tot.classList.remove('bump'); void tot.offsetWidth; tot.classList.add('bump'); }
     $('#yuanBreak').textContent = y ? `товар ${rub(item)}` + (promoOk ? ` − ${C.pp}% по промокоду · доставка и комиссия 🎁` : ` + комиссия ${rub(C.f)} + доставка ${rub(C.d)}`) : '';
   }
-  $('#yuan').addEventListener('input', e=>{ e.target.value=e.target.value.replace(/[^\d.,]/g,''); calcHero(); });
+  $('#yuan').addEventListener('input', e=>{
+    const v = e.target.value.replace(/[^\d.,]/g,'');
+    if(v.length > 6){ haptic('rigid'); toast('Не больше 6 символов'); }
+    e.target.value = v.slice(0,6); calcHero();
+  });
   $('#yuanAdd').addEventListener('click', ()=>{
     const y = parseFloat(($('#yuan').value||'').replace(',','.'));
     if(!y){ toast('Введите цену в юанях'); return; }
@@ -448,34 +519,50 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
   function cardHTML(it){
     const fav = favs.includes(it.i);
     return `<div class="card" data-id="${it.i}">
-      <div class="ph">${it.h?'<span class="tag">🔥 Хит</span>':''}<span class="fav">${fav?'❤️':''}</span>
+      <div class="ph">${it.h?`<span class="tag">${ae('🔥')} Хит</span>`:''}<span class="fav">${fav?'❤️':''}</span>
         <img loading="lazy" src="${esc(img(it.im[0]))}" alt=""></div>
       <div class="info"><div class="br">${esc(it.b)}</div><div class="nm">${esc(it.t)}</div>
         <div class="pr">${it.z.length>1?'от ':''}${rub(minPrice(it))}</div></div></div>`;
+  }
+  // «Не нашли товар, который хотели? Пишите менеджеру»
+  function notFoundHTML(){
+    return `<div class="notfound"><div class="nf-ic">${ae('🤔')}</div>
+      <div class="nf-t"><b>Не нашли товар, который хотели?</b><span>Напишите менеджеру — найдём и посчитаем любой товар с POIZON</span></div>
+      <button class="btn nf-go">${ae('💬')} Написать менеджеру</button></div>`;
+  }
+  function bindNotFound(root){
+    root.querySelectorAll('.nf-go').forEach(b=>b.onclick=()=>{
+      haptic('medium');
+      const q = ($('#q') && $('#q').value.trim()) || '';
+      const m = String(C.m||'').replace(/^@/,'');
+      if(!m || m==='manager_username'){ toast('Менеджер ещё не указан'); return; }
+      openTg('https://t.me/' + m + (q ? '?text=' + encodeURIComponent('Здравствуйте! Ищу: ' + q) : ''));
+    });
   }
   function bindCards(root){ root.querySelectorAll('.card').forEach(el=>el.addEventListener('click',()=>openItem(+el.dataset.id))); }
   function rail(title, items, onAll){
     if(!items.length) return '';
     const id = 'r' + Math.random().toString(36).slice(2,7);
     setTimeout(()=>{ const a=document.getElementById(id+'a'); if(a&&onAll) a.onclick=onAll; },0);
-    return `<h2>${title}<small id="${id}a">Все ›</small></h2><div class="rail">${items.slice(0,12).map(cardHTML).join('')}</div>`;
+    return `<h2><span>${title}</span><small id="${id}a">Все ›</small></h2><div class="rail">${items.slice(0,12).map(cardHTML).join('')}</div>`;
   }
   function renderHome(){
     const box = $('#homeRails');
-    if(!ITEMS.length){ box.innerHTML = '<div class="empty"><div>🛍</div>Витрина скоро появится.<br>А пока — узнайте цену любого товара выше 👆</div>'; return; }
+    if(!ITEMS.length){ box.innerHTML = `<div class="empty"><div>${ae('🛍')}</div>Витрина скоро появится.<br>А пока — узнайте цену любого товара выше 👆</div>`; return; }
     const hits = ITEMS.filter(i=>i.h).sort((a,b)=>a.h-b.h);
     const fresh = [...ITEMS].sort((a,b)=>b.a-a.a);
     const cheap = ITEMS.filter(i=>minPrice(i) <= 10000).sort((a,b)=>minPrice(a)-minPrice(b));
     const fav = ITEMS.filter(i=>favs.includes(i.i));
     const groups = [...new Set(ITEMS.map(i=>i.g))];
     box.innerHTML =
-      rail('❤️ Избранное', fav, ()=>openCatalog({fav:true})) +
-      rail('🔥 Хиты', hits, ()=>openCatalog({hit:true})) +
-      rail('✨ Новинки', fresh, ()=>openCatalog({})) +
-      rail('💸 До 10 000 ₽', cheap, ()=>openCatalog({cheap:true})) +
+      rail(ae('❤️')+' Избранное', fav, ()=>openCatalog({fav:true})) +
+      rail(ae('🔥')+' Хиты', hits, ()=>openCatalog({hit:true})) +
+      rail(ae('✨')+' Новинки', fresh, ()=>openCatalog({})) +
+      rail(ae('💸')+' До 10 000 ₽', cheap, ()=>openCatalog({cheap:true})) +
       `<h2>Категории</h2><div class="cats" style="flex-wrap:wrap">${groups.map(g=>`<div class="chip" data-g="${esc(g)}">${esc(g)}</div>`).join('')}</div>`;
     bindCards(box);
     box.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>openCatalog({g:el.dataset.g}));
+    $('#homeNF').innerHTML = notFoundHTML(); bindNotFound($('#homeNF'));
   }
   let F = {};
   function openCatalog(f){ F = f||{}; $('#q').value=''; go('catalog'); renderCatalog(); }
@@ -497,9 +584,9 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
       (!F.g || i.g===F.g) && (!F.b || i.b===F.b) && (!F.hit || i.h) && (!F.fav || favs.includes(i.i)) &&
       (!F.cheap || minPrice(i)<=10000) && (!q || (i.t+' '+i.b).toLowerCase().includes(q)));
     if(F.hit) list.sort((a,b)=>a.h-b.h);
-    $('#grid').innerHTML = list.length ? list.map(cardHTML).join('') :
-      `<div class="empty" style="grid-column:span 2"><div>🔍</div>${ITEMS.length?'Ничего не нашлось.':'Витрина пока пустая.'}<br>Любой товар с POIZON можно посчитать на главной.</div>`;
-    bindCards($('#grid'));
+    $('#grid').innerHTML = (list.length ? list.map(cardHTML).join('') :
+      `<div class="empty" style="grid-column:span 2"><div>${ae('🔍')}</div>${ITEMS.length?'Ничего не нашлось.':'Витрина пока пустая.'}<br>Любой товар с POIZON можно посчитать на главной.</div>`) + notFoundHTML();
+    bindCards($('#grid')); bindNotFound($('#grid'));
   }
   $('#q').addEventListener('input', ()=>renderCatalog());
 
@@ -663,7 +750,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
      <div class="note" style="margin-top:6px">от ${dateFull(o[4])} · ${rub(o[2])}${o[3]?` · трек <b style="color:var(--text)">${esc(o[3])}</b>`:''}</div></div>`).join('') : '';
   const tracksHTML = (C.t||[]).length ? '<h2>Отслеживание</h2>' + C.t.map(trackCard).join('') : '';
   $('#orderList').innerHTML = (ordersHTML + tracksHTML) ||
-    '<div class="empty"><div>📭</div>Здесь появятся ваши заявки и заказы.<br>Трек-номер от менеджера можно ввести выше.</div>';
+    `<div class="empty"><div>${ae('📭')}</div>Здесь появятся ваши заявки и заказы.<br>Трек-номер от менеджера можно ввести выше.</div>`;
   $('#trackBtn').onclick = ()=>{
     const n = $('#track').value.trim().replace(/^#/,'');
     if(n.length < 4){ toast('Введите трек-номер'); return; }
@@ -695,7 +782,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     {i:3,t:"Apple iPhone 17 Pro",b:"Apple",g:"📱 Техника",h:0,a:NOW-5,im:["https://cdn-img.thepoizon.ru/pro-img/origin-img/20240726/1eed0defcabe44b989217ec6ef6a8431.jpg"],z:[["Темно-синий · 256 ГБ","Темно-синий · 256 ГБ",126663],["Темно-синий · 512 ГБ","Темно-синий · 512 ГБ",164756],["Серебристый · 1 ТБ","Серебристый · 1 ТБ",203693,1]]},
   ];
 
-  syncPromoUI(); renderSizePill(); saveCart(); calcHero();
+  aeHydrate(); syncPromoUI(); renderSizePill(); saveCart(); calcHero();
   if(C.p){ promoOk = true; promoCode = C.p; syncPromoUI(); }
   else if(promoCode){ checkPromo(promoCode).then(ok=>{ promoOk=ok; if(!ok){ promoCode=''; store.set('promo',''); } syncPromoUI(); calcHero(); }); }
   loadCatalog();
