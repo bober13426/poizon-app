@@ -41,7 +41,7 @@ main{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:14px 14px
 .amount input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font-size:40px;font-weight:850;letter-spacing:-1px;padding:0}
 .amount input::placeholder{color:rgba(255,255,255,.18)}
 .result{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
-.big{font-size:34px;font-weight:850;letter-spacing:-1px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}
+.big{white-space:nowrap;font-size:clamp(24px,8.4vw,34px);font-weight:850;letter-spacing:-1px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}
 .mini{font-size:12px;color:var(--muted)}
 .row2{display:flex;gap:8px;margin-top:14px}
 .toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
@@ -84,9 +84,15 @@ h2 small{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer}
   padding-bottom:calc(96px + env(safe-area-inset-bottom));max-width:600px;margin:0 auto}
 .sheet.on{transform:none}
 .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:10px auto}
-.gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;background:#fff;scrollbar-width:none}
+.gwrap{position:relative;background:#fff}
+.gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;background:#fff;scrollbar-width:none;
+  height:min(82vw,44vh);width:100%}
 .gallery::-webkit-scrollbar{display:none}
-.gallery img{flex:0 0 100%;aspect-ratio:1;object-fit:contain;scroll-snap-align:center;padding:16px}
+/* min-width:0 — иначе на Android картинка не сжимается до ширины экрана и выглядит огромной */
+.gallery img{flex:0 0 100%;width:100%;min-width:0;height:100%;max-height:100%;object-fit:contain;
+  scroll-snap-align:center;padding:14px;box-sizing:border-box;display:block}
+.gcount{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font-size:11.5px;font-weight:700;
+  padding:3px 8px;border-radius:10px;pointer-events:none}
 .sb{padding:16px}
 .sb .br{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
 .sb h3{margin:4px 0 10px;font-size:20px;letter-spacing:-.3px}
@@ -514,7 +520,7 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
     const label = z => (sizeSys==='eu' && !it.v) ? z[1] : z[0];
     let sel = it.v ? -1 : it.z.findIndex(z => mySize && (z[0]===mySize || z[1]===mySize));
     if(sel<0 && it.z.length===1) sel = 0;
-    let custom = '', askOther = false;   // «другой размер» — привезём под заказ
+    let custom = '', askOther = false, galPos = 0;   // «другой размер» — привезём под заказ
     const fav = () => favs.includes(id);
     const draw = () => {
       const keep = sheetOpen ? $('#sheet').scrollTop : 0;   // не прыгать наверх при выборе размера
@@ -523,7 +529,8 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
       const showSizes = it.z.length>1 || it.z[0][0]!=='Один размер';
       const t = totals([price]);
       openSheet(`
-        <div class="gallery">${it.im.map(u=>`<img src="${esc(img(u,900))}" alt="">`).join('')}</div>
+        <div class="gwrap"><div class="gallery" id="gal">${it.im.map(u=>`<img src="${esc(img(u,800))}" alt="">`).join('')}</div>
+          ${it.im.length>1?`<div class="gcount" id="gcount">1/${it.im.length}</div>`:''}</div>
         <div class="sb">
           <div class="br">${esc(it.b)} · ${esc(it.g)}</div>
           <h3>${esc(it.t)}</h3>
@@ -541,6 +548,13 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
         `<button class="btn ghost sm" id="favBtn">${fav()?'❤️':'🤍'}</button><button class="btn" id="addBtn">${z?'Добавить в заявку':'Выберите '+sizeWord(it).toLowerCase()}</button>`);
       const sh = $('#sheet');
       sh.scrollTop = keep;
+      const gal = $('#gal'), gc = $('#gcount');
+      if(gal){
+        gal.scrollLeft = galPos * gal.clientWidth;
+        gal.onscroll = ()=>{ galPos = Math.round(gal.scrollLeft / Math.max(1, gal.clientWidth));
+                             if(gc) gc.textContent = (galPos+1) + '/' + it.im.length; };
+        if(gc) gc.textContent = (galPos+1) + '/' + it.im.length;
+      }
       sh.querySelectorAll('.sz[data-i]').forEach(el=>el.onclick=()=>{ sel=+el.dataset.i; custom=''; haptic(); draw(); });
       const other = $('#otherSz');
       if(other) other.onclick = ()=>{ askOther = true; haptic(); draw(); setTimeout(()=>{ const i=$('#otherIn'); if(i) i.focus(); }, 50); };
