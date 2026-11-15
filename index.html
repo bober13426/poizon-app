@@ -377,7 +377,11 @@ nav .cnt{position:absolute;top:0;left:56%;background:var(--bad);color:#fff;font-
              if(!postEvent('web_app_open_link',{url, try_instant_view:!!iv})) window.open(url,'_blank'); },
     openTg(url){ const w=W(); if(w && inTelegram()) return w.openTelegramLink(url);
              if(!postEvent('web_app_open_tg_link',{path_full:url.replace(/^https?:\/\/t\.me/,'')})) window.open(url,'_blank'); },
-    sendData(str){ if(!inTelegram()) return false; const w=W(); if(w && w.sendData){ w.sendData(str); return true; }
+    // sendData работает только если приложение открыто кнопкой клавиатуры; из inline-кнопки (рассылка) Telegram молча его игнорирует
+    // — в таком запуске есть query_id, и тогда заявку не отправляем и корзину не чистим
+    sendData(str){ if(!inTelegram()) return false; const w=W();
+             try{ if(w && w.initDataUnsafe && w.initDataUnsafe.query_id) return false; }catch(e){}
+             if(w && w.sendData){ w.sendData(str); return true; }
              return postEvent('web_app_data_send',{data:str}); },
     back(show){ const w=W(); try{ if(w) show ? w.BackButton.show() : w.BackButton.hide(); }catch(e){} },
   };
